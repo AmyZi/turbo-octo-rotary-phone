@@ -29,7 +29,7 @@
     </queries>
 
    <application
-        android:label="DriveMond"
+        android:label="Way2Go User"
        android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
@@ -39,7 +39,7 @@
 
 
        <meta-data android:name="com.google.android.geo.API_KEY"
-           android:value="YOUR_MAP_KEY_HERE"/>
+           android:value="AIzaSyCOsCDcX7G53qvAKzdRVGlaatRvhrXSKRs"/>
        <meta-data android:name="com.google.android.gms.version"
            android:value="@integer/google_play_services_version" />
        <!-- Necessary for apps that target Android 9.0 or higher -->

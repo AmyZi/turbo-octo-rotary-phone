@@ -4,7 +4,7 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 
 ThemeData lightTheme = ThemeData(
   fontFamily: AppConstants.fontFamily,
-  primaryColor: const Color(0xFF14B19E),
+  primaryColor: const Color(0xFFA13436),
   primaryColorDark: const Color(0xFF007B6C),
   disabledColor: const Color(0xFFBABFC4),
   scaffoldBackgroundColor: const Color(0xFF008C7B),
@@ -47,14 +47,14 @@ ThemeData lightTheme = ThemeData(
     onPrimaryContainer: Color(0xFFDEFFFB),
     primaryContainer: Color(0xFFFFA800),
     onErrorContainer: Color(0xFFFFE6AD),
-    onPrimary: Color(0xFF14B19E),
+    onPrimary: Color(0xFFA13436),
     surfaceTint: Color(0xFF0B9722),
     errorContainer: Color(0xFFF6F6F6),
     inverseSurface: Color(0xFF0148AF),
     surfaceContainer: Color(0xFF0094FF),
     secondaryFixedDim: Color(0xff808080),
   ),
-  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF14B19E))),
+  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFFA13436))),
 
   extensions: <ThemeExtension<CustomThemeColors>>[
     CustomThemeColors.light(),

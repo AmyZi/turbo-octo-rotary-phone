@@ -4,7 +4,7 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 
 ThemeData darkTheme = ThemeData(
   fontFamily: AppConstants.fontFamily,
-  primaryColor: const Color(0xFF00735f),
+  primaryColor: const Color(0xFF601517),
   primaryColorDark: const Color(0xff016655),
   disabledColor: const Color(0xFFBABFC4),
   scaffoldBackgroundColor: const Color(0xFF163935),
@@ -42,7 +42,7 @@ ThemeData darkTheme = ThemeData(
     secondaryFixedDim: Color(0xff808080),
 
   ),
-  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF00735f))),
+  textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: const Color(0xFF601517))),
 
   extensions: <ThemeExtension<CustomThemeColors>>[
     CustomThemeColors.dark(),
