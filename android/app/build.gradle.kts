@@ -14,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.hiweb.hexauser"
+    namespace = "com.hiweb.way2gouser"
     compileSdk = 36
      ndkVersion = "28.2.13676358"
 
@@ -30,7 +30,7 @@ android {
 
     defaultConfig {
         multiDexEnabled = true
-        applicationId = "com.hiweb.hexauser"
+        applicationId = "com.hiweb.way2gouser"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
