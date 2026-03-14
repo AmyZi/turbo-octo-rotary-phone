@@ -29,7 +29,7 @@
     </queries>
 
    <application
-        android:label="Way2Go User"
+        android:label="Way2Go"
        android:requestLegacyExternalStorage="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"

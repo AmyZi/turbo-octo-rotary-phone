@@ -4,7 +4,7 @@ import 'package:ride_sharing_user_app/localization/language_model.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
 
 class AppConstants {
-  static const String appName = 'Way2Go User';
+  static const String appName = 'Way2Go';
   static const String baseUrl = 'https://way2go-lb.com';
   static const double appVersion = 3.0; /// Flutter SDK 3.38.7
   static const String fontFamily = 'SFProText';

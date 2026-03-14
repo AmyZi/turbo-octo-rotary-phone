@@ -5,9 +5,9 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 ThemeData lightTheme = ThemeData(
   fontFamily: AppConstants.fontFamily,
   primaryColor: const Color(0xFFA13436),
-  primaryColorDark: const Color(0xFF007B6C),
+  primaryColorDark: const Color(0xFF89181E),
   disabledColor: const Color(0xFFBABFC4),
-  scaffoldBackgroundColor: const Color(0xFF008C7B),
+  scaffoldBackgroundColor: const Color(0xFFA91C24),
   shadowColor: Colors.black.withValues(alpha:0.03),
   textTheme:  const TextTheme(
     bodyMedium: TextStyle(color: Color(0xff1D2D2B)),
@@ -32,8 +32,8 @@ ThemeData lightTheme = ThemeData(
   hintColor: const Color(0xFF9F9F9F),
   cardColor: Colors.white,
   colorScheme: const ColorScheme.light(
-    primary: Color(0xFF008C7B),
-    secondary: Color(0xFF008C7B),
+    primary: Color(0xFF89181E),
+    secondary: Color(0xFF89181E),
     error: Color(0xFFFF6767),
     surface: Color(0xFFF3F3F3),
     tertiary: Color(0xFF7CCD8B),

@@ -1,1 +1,0 @@
- /Users/mac/Desktop/way2go-user-mobile/.dart_tool/flutter_build/4e58b23de8b6d5922cb4464dd1b36687/dart_build_result.json: 
