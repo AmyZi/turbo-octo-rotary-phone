@@ -34,7 +34,7 @@ class _SearchAndPickLocationScreenState extends State<SearchAndPickLocationScree
               cursorColor: Theme.of(context).primaryColor,
               controller: controller,
               decoration: InputDecoration(
-                hintText: 'search_location'.tr,
+                hintText: 'search_location_lebanon'.tr,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(style: BorderStyle.none, width: 0),

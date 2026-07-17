@@ -12,6 +12,7 @@ import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/features/address/domain/models/address_model.dart';
 import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
+import 'package:ride_sharing_user_app/features/location/domain/lebanon_geography.dart';
 import 'package:ride_sharing_user_app/common_widgets/button_widget.dart';
 
 class PickMapScreen extends StatefulWidget {
@@ -48,6 +49,7 @@ class _PickMapScreenState extends State<PickMapScreen> {
         child: GetBuilder<LocationController>(builder: (locationController) {
           return Stack(children: [
             GoogleMap(
+              cameraTargetBounds: LebanonGeography.cameraTargetBounds,
               initialCameraPosition: CameraPosition(
                 target: widget.address != null ?
                 LatLng(widget.address?.latitude ?? 0, widget.address?.longitude ?? 0) :

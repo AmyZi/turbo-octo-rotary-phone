@@ -107,11 +107,29 @@ class AddressController extends GetxController implements GetxService {
   void updateLastLocation(){
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 10), (timer) async{
-      var location = await Geolocator.getCurrentPosition(
-          locationSettings: LocationSettings(accuracy: LocationAccuracy.high)
-      );
-      await addressServiceInterface.updateLastLocation(location.latitude.toString(), location.longitude.toString(), Get.find<LocationController>().zoneID ?? '');
+      try {
+        var location = await Geolocator.getCurrentPosition(
+          locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
+        );
+        final zoneId = await Get.find<LocationController>().ensureZoneId(
+          lat: location.latitude,
+          lng: location.longitude,
+        );
+        if (zoneId == null || zoneId.isEmpty) return;
+
+        await addressServiceInterface.updateLastLocation(
+          location.latitude.toString(),
+          location.longitude.toString(),
+          zoneId,
+        );
+      } catch (_) {}
     });
+  }
+
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
   }
 
 }

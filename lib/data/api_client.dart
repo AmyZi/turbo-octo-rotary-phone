@@ -35,18 +35,23 @@ class ApiClient extends GetxService {
   }
 
   void updateHeader(String token, Address? address, {String? zoneId}) {
+    final effectiveToken = token.isNotEmpty
+        ? token
+        : (sharedPreferences.getString(AppConstants.token) ?? '');
+    this.token = effectiveToken;
+
     Map<String, String> header = {};
-    if(address != null) {
-      header.addAll({'zoneId': address.zoneId.toString()});
+    if (address?.zoneId != null && address!.zoneId!.isNotEmpty) {
+      header.addAll({'zoneId': address.zoneId!});
     }
-    if(zoneId != null){
+    if (zoneId != null && zoneId.isNotEmpty) {
       header.addAll({'zoneId': zoneId});
     }
     header.addAll({
       'Content-Type': 'application/json; charset=UTF-8',
       'Accept' : 'application/json',
       AppConstants.localization: sharedPreferences.getString(AppConstants.languageCode) ?? AppConstants.languages[0].languageCode,
-      'Authorization': 'Bearer $token',
+      'Authorization': 'Bearer $effectiveToken',
     });
     if (kDebugMode) {
       print('====> API Call: Zone: ${address?.zoneId ?? ''}');

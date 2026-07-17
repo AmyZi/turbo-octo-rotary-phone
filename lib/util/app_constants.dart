@@ -30,6 +30,8 @@ class AppConstants {
   static const String geoCodeURI = '/api/customer/config/geocode-api';
   static const String searchLocationUri = '/api/customer/config/place-api-autocomplete';
   static const String placeApiDetails = '/api/customer/config/place-api-details';
+  /// Predefined Lebanon areas for client-side search (no Google Places).
+  static const String addressesCatalogUri = '/api/addresses';
   static const String estimatedFare = '/api/customer/ride/get-estimated-fare';
   static const String rideRequest = '/api/customer/ride/create';
   static const String addNewAddress = '/api/customer/address/add';

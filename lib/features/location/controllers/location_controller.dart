@@ -8,6 +8,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/features/location/domain/models/place_details_model.dart';
 import 'package:ride_sharing_user_app/features/location/domain/models/prediction_model.dart';
 import 'package:ride_sharing_user_app/features/location/domain/models/zone_response.dart';
+import 'package:ride_sharing_user_app/features/location/domain/lebanon_geography.dart';
+import 'package:ride_sharing_user_app/features/location/domain/way2go_address_catalog.dart';
+import 'package:ride_sharing_user_app/data/api_client.dart';
+import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/location/domain/services/location_service_interface.dart';
 import 'package:ride_sharing_user_app/helper/display_helper.dart';
 import 'package:ride_sharing_user_app/util/images.dart';
@@ -45,7 +49,14 @@ class LocationController extends GetxController implements GetxService {
   GoogleMapController? mapController;
   PredictionModel? _predictionList;
   bool _updateAddAddressData = true;
-  LatLng _initialPosition = const LatLng(23.83721, 90.363715);
+  LatLng _initialPosition = LebanonGeography.defaultCenter;
+  int _locationSearchRequestId = 0;
+  Timer? _searchDebounceTimer;
+  Timer? _geocodeDebounceTimer;
+  Completer<List<Suggestions>?>? _pendingSearchCompleter;
+  final Map<String, String> _geocodeCache = {};
+  static const Duration _searchDebounce = Duration(milliseconds: 400);
+  static const Duration _geocodeDebounce = Duration(milliseconds: 600);
   bool addEntrance = false;
   int currentExtraRoute = 0;
   bool extraOneRoute = false;
@@ -119,7 +130,82 @@ class LocationController extends GetxController implements GetxService {
   @override
   void onInit(){
     super.onInit();
+    _hydrateZoneFromSavedAddress();
     getCurrentLocation();
+  }
+
+  void _hydrateZoneFromSavedAddress() {
+    final saved = getUserAddress();
+    if (saved?.zoneId != null && saved!.zoneId!.isNotEmpty) {
+      _zoneID = saved.zoneId;
+      _syncZoneToApiHeaders();
+    }
+  }
+
+  String? get effectiveZoneId {
+    if (_zoneID != null && _zoneID!.isNotEmpty) return _zoneID;
+    return getUserAddress()?.zoneId ?? fromAddress?.zoneId;
+  }
+
+  /// Resolves zone for live-location and other APIs; fetches from GPS if needed.
+  Future<String?> ensureZoneId({double? lat, double? lng}) async {
+    final cached = effectiveZoneId;
+    if (cached != null && cached.isNotEmpty) {
+      _zoneID ??= cached;
+      _syncZoneToApiHeaders();
+      return cached;
+    }
+
+    final latitude = lat ?? _position.latitude;
+    final longitude = lng ?? _position.longitude;
+    if (latitude == 0 && longitude == 0) return null;
+
+    final response = await getZone(latitude.toString(), longitude.toString());
+    return response.zoneId;
+  }
+
+  void _syncZoneToApiHeaders() {
+    if (_zoneID == null || _zoneID!.isEmpty) return;
+    try {
+      final apiClient = Get.find<ApiClient>();
+      final token = Get.find<AuthController>().getUserToken();
+      apiClient.updateHeader(token, getUserAddress(), zoneId: _zoneID);
+    } catch (_) {}
+  }
+
+  /// GPS when inside Lebanon; otherwise pickup (or destination) so ride APIs stay consistent.
+  LatLng coordinatesForRideRequest({bool parcel = false}) {
+    if (LebanonGeography.contains(_initialPosition) &&
+        (_initialPosition.latitude != 0 || _initialPosition.longitude != 0)) {
+      return _initialPosition;
+    }
+    final Address? pickup = parcel ? parcelSenderAddress : fromAddress;
+    if (pickup?.latitude != null &&
+        pickup?.longitude != null &&
+        (pickup!.latitude != 0 || pickup.longitude != 0)) {
+      return LatLng(pickup.latitude!, pickup.longitude!);
+    }
+    final Address? destination = parcel ? parcelReceiverAddress : toAddress;
+    if (destination?.latitude != null &&
+        destination?.longitude != null &&
+        (destination!.latitude != 0 || destination.longitude != 0)) {
+      return LatLng(destination.latitude!, destination.longitude!);
+    }
+    return LebanonGeography.defaultCenter;
+  }
+
+  Address _addressWithZone({
+    required double lat,
+    required double lng,
+    required String address,
+    String? zoneId,
+  }) {
+    return Address(
+      latitude: lat,
+      longitude: lng,
+      address: address,
+      zoneId: zoneId ?? _zoneID,
+    );
   }
 
 
@@ -168,17 +254,18 @@ class LocationController extends GetxController implements GetxService {
         if(isAnimate && mapController != null) {
           mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: _initialPosition, zoom: 15)));
         }
+        await getZone(_position.latitude.toString(), _position.longitude.toString());
+
         if(type == LocationType.from){
           _pickPosition = Position(
               latitude: position.latitude, longitude: position.longitude, timestamp: DateTime.now(),
               heading: 1, accuracy: 1, altitude: 1, speedAccuracy: 1, speed: 1, altitudeAccuracy: 1, headingAccuracy: 1);
-          ZoneResponseModel responseModel = await getZone(_position.latitude.toString(), _position.longitude.toString());
           String address = await initAddressAddressFromGeocode(_initialPosition);
 
-          if(responseModel.isSuccess && responseModel.zoneId != null) {
+          if(_zoneID != null) {
             addressModel = Address(
               latitude: newLocalData.latitude, longitude: newLocalData.longitude,
-              address: address, zoneId: responseModel.zoneId,
+              address: address, zoneId: _zoneID,
             );
           }
         }
@@ -240,7 +327,7 @@ class LocationController extends GetxController implements GetxService {
     Response response = await locationServiceInterface.getZone(lat, long);
     if(response.statusCode == 200 && response.body['data'] != null && response.body['data']['id'] != null) {
       _zoneID = response.body['data']['id'].toString();
-      // Get.find<ApiClient>().updateHeader(Get.find<ApiClient>().token, null,zoneId: _zoneID);
+      _syncZoneToApiHeaders();
       _inZone = true;
       responseModel = ZoneResponseModel(true, '', _zoneID);
     }else {
@@ -265,9 +352,20 @@ class LocationController extends GetxController implements GetxService {
   }
 
   Future<String> initAddressAddressFromGeocode(LatLng latLng) async {
+    final cacheKey = _geocodeCacheKey(latLng);
+    final cached = _geocodeCache[cacheKey];
+    if (cached != null) {
+      _address = cached;
+      pickupLocationController.text = _address;
+      fromAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: _address);
+      update();
+      return _address;
+    }
+
     Response response = await locationServiceInterface.getAddressFromGeocode(latLng);
     if(response.statusCode == 200) {
       _address = response.body['data']['results'][0]['formatted_address'].toString();
+      _geocodeCache[cacheKey] = _address;
       pickupLocationController.text = _address;
       fromAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: _address);
     }else {
@@ -278,9 +376,18 @@ class LocationController extends GetxController implements GetxService {
   }
 
   Future<String> getAddressFromGeocode(LatLng latLng) async {
+    final cacheKey = _geocodeCacheKey(latLng);
+    final cached = _geocodeCache[cacheKey];
+    if (cached != null) {
+      _address = cached;
+      update();
+      return _address;
+    }
+
     Response response = await locationServiceInterface.getAddressFromGeocode(latLng);
     if(response.statusCode == 200) {
       _address = response.body['data']['results'][0]['formatted_address'].toString();
+      _geocodeCache[cacheKey] = _address;
     }else {
       showCustomSnackBar(response.body['errors'][0]['message'] ?? response.bodyString);
     }
@@ -288,35 +395,84 @@ class LocationController extends GetxController implements GetxService {
     return _address;
   }
 
+  Future<void> _scheduleGeocodeForPosition(LatLng positionLatLng, bool fromAddressScreen) async {
+    _geocodeDebounceTimer?.cancel();
+    final latLng = LatLng(positionLatLng.latitude, positionLatLng.longitude);
+    _geocodeDebounceTimer = Timer(_geocodeDebounce, () async {
+      final addressFromGeocode = await getAddressFromGeocode(latLng);
+      if (fromAddressScreen) {
+        _address = addressFromGeocode;
+      } else {
+        _pickAddress = addressFromGeocode;
+      }
+      update();
+    });
+  }
+
+  String _geocodeCacheKey(LatLng latLng) =>
+      '${latLng.latitude.toStringAsFixed(4)},${latLng.longitude.toStringAsFixed(4)}';
+
+  void _completePendingSearch([List<Suggestions>? value]) {
+    if (_pendingSearchCompleter != null && !_pendingSearchCompleter!.isCompleted) {
+      _pendingSearchCompleter!.complete(value);
+    }
+    _pendingSearchCompleter = null;
+  }
+
   Future<List<Suggestions>?> searchLocation(BuildContext context, String text, {LocationType type = LocationType.from, bool fromMap = false}) async {
     locationType = type;
-    if(!fromMap) {
+    _searchDebounceTimer?.cancel();
+
+    if (text.isEmpty) {
+      _completePendingSearch(_predictionList?.data?.suggestions);
+      _predictionList = null;
+      if (!fromMap) {
+        setSearchResultShowHide(show: false);
+      }
+      update();
+      return null;
+    }
+
+    if (!fromMap) {
+      setSearchResultShowHide(show: true);
       update();
     }
 
-    if(text.isNotEmpty) {
-      if(!fromMap) {
-        setSearchResultShowHide(show: true);
+    _completePendingSearch(_predictionList?.data?.suggestions);
+    _pendingSearchCompleter = Completer<List<Suggestions>?>();
+    final completer = _pendingSearchCompleter!;
+
+    _searchDebounceTimer = Timer(_searchDebounce, () async {
+      final int requestId = ++_locationSearchRequestId;
+      final response = await locationServiceInterface.searchLocation(text);
+      if (requestId != _locationSearchRequestId) {
+        if (!completer.isCompleted) {
+          completer.complete(_predictionList?.data?.suggestions);
+        }
+        return;
       }
 
-      Response response = await locationServiceInterface.searchLocation(text);
       if (response.statusCode == 200) {
         _predictionList = PredictionModel.fromJson(response.body);
-        update();
-      } else {
-        //customSnackBar(response.body['message'] ?? response.bodyString,isError:false);
       }
-    }else{
-      if(!fromMap) {
-        setSearchResultShowHide(show: false);
+      update();
+      if (!completer.isCompleted) {
+        completer.complete(_predictionList?.data?.suggestions);
       }
+    });
 
-    }
-    return _predictionList?.data?.suggestions;
+    return completer.future;
   }
 
   void updatePosition(LatLng? positionLatLng, bool fromAddressScreen, LocationType? type) async {
     if(_updateAddAddressData && positionLatLng != null) {
+      if (!LebanonGeography.contains(positionLatLng)) {
+        _buttonDisabled = true;
+        _inZone = false;
+        showCustomSnackBar('location_must_be_in_lebanon'.tr);
+        update();
+        return;
+      }
       _loading = true;
       update();
       try {
@@ -340,10 +496,7 @@ class LocationController extends GetxController implements GetxService {
           _buttonDisabled = false;
         }
         if (_changeAddress) {
-          String addressFromGeocode = await getAddressFromGeocode(LatLng(positionLatLng.latitude, positionLatLng.longitude));
-          fromAddressScreen ? _address = addressFromGeocode : _pickAddress = addressFromGeocode;
-
-
+          await _scheduleGeocodeForPosition(positionLatLng, fromAddressScreen);
         } else {
           _changeAddress = true;
         }
@@ -422,57 +575,105 @@ class LocationController extends GetxController implements GetxService {
     resultShow = false;
     selecting = true;
     update();
-    LatLng latLng = const LatLng(0, 0);
+    LatLng? latLng = Way2GoAddressCatalog.latLngFromPlaceId(placeID);
     Address? selectedAddress;
-    Response response = await locationServiceInterface.getPlaceDetails(placeID);
-    if(response.statusCode == 200) {
-      PlaceDetailsModel placeDetails = PlaceDetailsModel.fromJson(response.body);
-      latLng = LatLng(placeDetails.data?.location?.latitude ?? 0, placeDetails.data?.location?.longitude ?? 0);
 
-      ZoneResponseModel zoneResponse = await getZone(latLng.latitude.toString(), latLng.longitude.toString());
-      if(zoneResponse.zoneId != null) {
-        _predictionList = null;
-        if(fromSearch){
-          if(type == LocationType.from) {
-            fromAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: address);
-            pickupLocationController.text = address;
-          }else if(type == LocationType.to) {
-            toAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: address);
-            destinationLocationController.text = address;
-          }else if(type == LocationType.extraOne) {
-            extraRouteAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: address);
-            extraRouteOneController.text = address;
-          }else if(type == LocationType.extraTwo) {
-            extraRouteTwoAddress = Address(latitude: latLng.latitude, longitude: latLng.longitude, address: address);
-            extraRouteTwoController.text = address;
-          }
-        }
-
-        _pickPosition = Position(
-            latitude: latLng.latitude, longitude: latLng.longitude,
-            timestamp: DateTime.now(), accuracy: 1, altitude: 1, heading: 1, speed: 1, speedAccuracy: 1, altitudeAccuracy: 1, headingAccuracy: 1);
-        _pickAddress = address;
-
-
-        _changeAddress = false;
-        if(mapController != null) {
-          mapController.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: latLng, zoom: 16)));
-        }
+    if (latLng == null) {
+      Response response = await locationServiceInterface.getPlaceDetails(placeID);
+      if (response.statusCode == 200) {
+        PlaceDetailsModel placeDetails = PlaceDetailsModel.fromJson(response.body);
+        latLng = LatLng(
+          placeDetails.data?.location?.latitude ?? 0,
+          placeDetails.data?.location?.longitude ?? 0,
+        );
+      } else {
         selecting = false;
         _loading = false;
         update();
-        selectedAddress = Address(
-          latitude: pickPosition.latitude,
-          longitude: pickPosition.longitude,
-          addressLabel: 'others', address: pickAddress,
-        );
-      }else {
-        selecting = false;
-        showCustomSnackBar('service_not_available_in_this_area'.tr);
+        return null;
       }
     }
+
+    if (!LebanonGeography.contains(latLng)) {
+      selecting = false;
+      _loading = false;
+      showCustomSnackBar('location_must_be_in_lebanon'.tr);
+      update();
+      return null;
+    }
+
+    _geocodeCache[_geocodeCacheKey(latLng)] = address;
+
+    ZoneResponseModel zoneResponse = await getZone(latLng.latitude.toString(), latLng.longitude.toString());
+    if (zoneResponse.zoneId != null) {
+      _predictionList = null;
+      if (fromSearch) {
+        if (type == LocationType.from) {
+          fromAddress = _addressWithZone(
+            lat: latLng.latitude, lng: latLng.longitude, address: address, zoneId: zoneResponse.zoneId,
+          );
+          pickupLocationController.text = address;
+        } else if (type == LocationType.to) {
+          toAddress = _addressWithZone(
+            lat: latLng.latitude, lng: latLng.longitude, address: address, zoneId: zoneResponse.zoneId,
+          );
+          destinationLocationController.text = address;
+        } else if (type == LocationType.extraOne) {
+          extraRouteAddress = _addressWithZone(
+            lat: latLng.latitude, lng: latLng.longitude, address: address, zoneId: zoneResponse.zoneId,
+          );
+          extraRouteOneController.text = address;
+        } else if (type == LocationType.extraTwo) {
+          extraRouteTwoAddress = _addressWithZone(
+            lat: latLng.latitude, lng: latLng.longitude, address: address, zoneId: zoneResponse.zoneId,
+          );
+          extraRouteTwoController.text = address;
+        }
+      }
+
+      _pickPosition = Position(
+        latitude: latLng.latitude,
+        longitude: latLng.longitude,
+        timestamp: DateTime.now(),
+        accuracy: 1,
+        altitude: 1,
+        heading: 1,
+        speed: 1,
+        speedAccuracy: 1,
+        altitudeAccuracy: 1,
+        headingAccuracy: 1,
+      );
+      _pickAddress = address;
+      _changeAddress = false;
+
+      if (mapController != null) {
+        mapController.animateCamera(
+          CameraUpdate.newCameraPosition(CameraPosition(target: latLng, zoom: 16)),
+        );
+      }
+      selectedAddress = Address(
+        latitude: pickPosition.latitude,
+        longitude: pickPosition.longitude,
+        addressLabel: 'others',
+        address: pickAddress,
+        zoneId: zoneResponse.zoneId,
+      );
+    } else {
+      showCustomSnackBar('service_not_available_in_this_area'.tr);
+    }
+
     selecting = false;
+    _loading = false;
+    update();
     return selectedAddress;
+  }
+
+  @override
+  void onClose() {
+    _searchDebounceTimer?.cancel();
+    _geocodeDebounceTimer?.cancel();
+    _completePendingSearch(_predictionList?.data?.suggestions);
+    super.onClose();
   }
 
   void disableButton() {

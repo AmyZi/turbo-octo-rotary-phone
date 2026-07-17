@@ -31,6 +31,8 @@ class RideRepository implements RideRepositoryInterface{
     return await apiClient.postData(AppConstants.estimatedFare, {
       "pickup_coordinates" : '[${pickupLatLng.latitude},${pickupLatLng.longitude}]',
       "destination_coordinates" : '[${destinationLatLng.latitude},${destinationLatLng.longitude}]',
+      "customer_coordinates": '[${currentLatLng.latitude},${currentLatLng.longitude}]',
+      "customer_request_coordinates": '[${currentLatLng.latitude},${currentLatLng.longitude}]',
       "type" : type,
       "ride_request_type" : rideRequestType,
       "pickup_address": pickupAddress,

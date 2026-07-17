@@ -170,10 +170,16 @@ class RideController extends GetxController implements GetxService {
 
     DateTime scheduledTime = DateTime(scheduleDate.year,scheduleDate.month,scheduleDate.day,scheduleTime.hour,scheduleTime.minute,scheduleTime.second);
 
+    await locController.ensureZoneId(
+      lat: fromPosition.latitude,
+      lng: fromPosition.longitude,
+    );
+    final customerCoords = locController.coordinatesForRideRequest(parcel: parcel);
+
     Response? response = await rideServiceInterface.getEstimatedFare(
       pickupLatLng: LatLng(fromPosition.latitude!, fromPosition.longitude!),
       destinationLatLng: LatLng(toPosition.latitude!, toPosition.longitude!),
-      currentLatLng: LatLng(locController.initialPosition.latitude, locController.initialPosition.longitude),
+      currentLatLng: customerCoords,
       type: parcel ? 'parcel' : 'ride_request',
       rideRequestType: parcel ? null : _rideType == RideType.regularRide ? 'regular' : 'scheduled',
       pickupAddress : parcel ? parcelController.senderAddressController.text
@@ -213,7 +219,7 @@ class RideController extends GetxController implements GetxService {
     }else{
       loading = false;
       isEstimate = false;
-      ApiChecker.checkApi(response);
+      ApiChecker.checkApi(response, clearSessionOnUnauthorized: false);
       if(response.statusCode == 403 && !parcel) {
         tripDetails = null;
         rideDetails = null;
@@ -238,13 +244,22 @@ class RideController extends GetxController implements GetxService {
 
     DateTime scheduledTime = DateTime(scheduleDate.year,scheduleDate.month,scheduleDate.day,scheduleTime.hour,scheduleTime.minute,scheduleTime.second);
 
+    await locController.ensureZoneId(
+      lat: pickUpPosition.latitude,
+      lng: pickUpPosition.longitude,
+    );
+    final customerCoords = locController.coordinatesForRideRequest(parcel: parcel);
+    final rideZoneId = parcel
+        ? (parcelEstimatedFare?.data?.zoneId ?? locController.effectiveZoneId ?? '')
+        : (selectedType?.zoneId ?? locController.fromAddress?.zoneId ?? locController.effectiveZoneId ?? '');
+
     Response response = await rideServiceInterface.submitRideRequest(
       pickupLat: pickUpPosition.latitude.toString(),
       pickupLng: pickUpPosition.longitude.toString(),
       destinationLat: destinationPosition.latitude.toString(),
       destinationLng: destinationPosition.longitude.toString(),
-      customerCurrentLat: locController.initialPosition.latitude.toString(),
-      customerCurrentLng: locController.initialPosition.longitude.toString(), type: parcel ? 'parcel' : 'ride_request',
+      customerCurrentLat: customerCoords.latitude.toString(),
+      customerCurrentLng: customerCoords.longitude.toString(), type: parcel ? 'parcel' : 'ride_request',
         rideRequestType: parcel ? null : _rideType == RideType.regularRide ? 'regular' : 'scheduled',
       pickupAddress: parcel ? Get.find<ParcelController>().senderAddressController.text
           : tripDetails == null ? locController.fromAddress!.address.toString() : tripDetails!.pickupAddress!,
@@ -287,7 +302,7 @@ class RideController extends GetxController implements GetxService {
       extraCancellationFee: parcel ? (parcelEstimatedFare?.data?.extraCancellationFee ?? 0) : (selectedType?.extraCancellationFee ?? 0),
       extraFareAmount: parcel ? (parcelEstimatedFare?.data?.extraFareAmount ?? 0) : (selectedType?.extraFareAmount ?? 0),
       extraFareFee: parcel ? (parcelEstimatedFare?.data?.extraFareFee ?? 0) : (selectedType?.extraFareFee ?? 0),
-      zoneId: parcel ? parcelEstimatedFare?.data?.zoneId ?? '' : selectedType?.zoneId ,
+      zoneId: rideZoneId,
       scheduledAt: _rideType == RideType.scheduleRide ? scheduledTime.toString() : '',
       surgeMultiplier: parcel ? parcelEstimatedFare?.data?.surgeMultiplier : selectedType?.surgeMultiplier
     );
@@ -313,7 +328,7 @@ class RideController extends GetxController implements GetxService {
       noteController.clear();
     }else{
       isSubmit = false;
-      ApiChecker.checkApi(response);
+      ApiChecker.checkApi(response, clearSessionOnUnauthorized: false);
       if(response.statusCode == 403) {
         tripDetails = null;
         rideDetails = null;

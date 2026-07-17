@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:dart_pusher_channels/dart_pusher_channels.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:ride_sharing_user_app/features/splash/domain/models/config_model.dart';
 import 'package:ride_sharing_user_app/features/auth/controllers/auth_controller.dart';
 import 'package:ride_sharing_user_app/features/dashboard/screens/dashboard_screen.dart';
 import 'package:ride_sharing_user_app/features/map/controllers/map_controller.dart';
@@ -16,12 +18,30 @@ import 'package:ride_sharing_user_app/util/app_constants.dart';
 
 class PusherHelper {
   static PusherChannelsClient?  pusherClient;
-  static void initializePusher() async{
+
+  static int _resolveWebSocketPort(ConfigModel? config) {
+    final raw = config?.webSocketPort?.toString().trim();
+    if (raw == null || raw.isEmpty) return 6001;
+    return int.tryParse(raw) ?? 6001;
+  }
+
+  static void initializePusher() async {
+    final config = Get.find<ConfigController>().config;
+    final host = config?.webSocketUrl?.trim() ?? '';
+    final key = config?.webSocketKey?.trim() ?? '';
+    if (host.isEmpty || key.isEmpty) {
+      if (kDebugMode) {
+        print('Pusher: websocket_url or websocket_key missing in config — skip connect');
+      }
+      return;
+    }
+
+    try {
     PusherChannelsOptions testOptions = PusherChannelsOptions.fromHost(
-      host: Get.find<ConfigController>().config!.webSocketUrl ?? '',
-      scheme: Get.find<ConfigController>().config!.websocketScheme == 'https' ? 'wss' : 'ws',
-      key: Get.find<ConfigController>().config!.webSocketKey ?? '',
-      port: int.parse(Get.find<ConfigController>().config?.webSocketPort ?? '6001'),
+      host: host,
+      scheme: config!.websocketScheme == 'https' ? 'wss' : 'ws',
+      key: key,
+      port: _resolveWebSocketPort(config),
     );
 
     pusherClient = PusherChannelsClient.websocket(
@@ -43,7 +63,12 @@ class PusherHelper {
     pusherClient?.lifecycleStream.listen((event) {
       Get.find<ConfigController>().setPusherStatus('Disconnected');
     });
-
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('Pusher initialize failed: $e\n$stack');
+      }
+      Get.find<ConfigController>().setPusherStatus('Disconnected');
+    }
   }
 
   late PrivateChannel pusherDriverAccepted;

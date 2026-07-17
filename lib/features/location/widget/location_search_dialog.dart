@@ -35,7 +35,7 @@ class LocationSearchDialog extends StatelessWidget {
                  decoration: InputDecoration(filled: true, fillColor: Theme.of(context).cardColor,
                      hintStyle: Theme.of(context).textTheme.displayMedium!.copyWith(
                          fontSize: Dimensions.fontSizeDefault, color: Theme.of(context).disabledColor),
-                     hintText: 'search_location'.tr,
+                     hintText: 'search_location_lebanon'.tr,
                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10),
                          borderSide: const BorderSide(style: BorderStyle.none, width: 0)),
                  ),

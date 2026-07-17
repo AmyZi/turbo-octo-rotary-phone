@@ -8,14 +8,15 @@ import 'package:ride_sharing_user_app/util/images.dart';
 import 'package:ride_sharing_user_app/util/styles.dart';
 import 'package:ride_sharing_user_app/features/address/domain/models/address_model.dart';
 import 'package:ride_sharing_user_app/features/location/controllers/location_controller.dart';
+import 'package:ride_sharing_user_app/features/location/domain/lebanon_geography.dart';
 import 'package:ride_sharing_user_app/common_widgets/app_bar_widget.dart';
 import 'package:ride_sharing_user_app/common_widgets/body_widget.dart';
 
 class LocationScreen extends StatefulWidget {
   final AddressModel? address;
   const LocationScreen({super.key, required this.address});
-
-  @override
+    /// constructor for the location screen
+  @override 
   LocationScreenState createState() => LocationScreenState();
 }
 
@@ -42,6 +43,7 @@ class LocationScreenState extends State<LocationScreen> {
             return Stack(children: [
 
               GoogleMap(
+                cameraTargetBounds: LebanonGeography.cameraTargetBounds,
                 minMaxZoomPreference: const MinMaxZoomPreference(0, 15),
                 initialCameraPosition: CameraPosition(target: locationController.initialPosition, zoom: 15),
                 zoomGesturesEnabled: true,

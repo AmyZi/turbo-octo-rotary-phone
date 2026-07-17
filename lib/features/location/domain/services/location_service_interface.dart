@@ -4,6 +4,7 @@ import 'package:ride_sharing_user_app/features/address/domain/models/address_mod
 abstract class LocationServiceInterface{
   Future<dynamic> getZone(String lat, String lng);
   Future<dynamic> getAddressFromGeocode(LatLng? latLng);
+  /// Way2Go address catalog search (`/api/addresses`); no Google Places autocomplete.
   Future<dynamic> searchLocation(String text);
   Future<dynamic> getPlaceDetails(String placeID);
   Future<bool> saveUserAddress(Address? address);

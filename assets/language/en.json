@@ -355,6 +355,8 @@
   "pick_location": "Pick Location",
   "pick_address" : "Pick Address",
   "search_location": "Search Location",
+  "search_location_lebanon": "Search location (Lebanon)",
+  "location_must_be_in_lebanon": "Please choose a location inside Lebanon.",
   "extra_route_one": "Extra route one",
   "extra_route_two": "Extra route two",
   "pickup_location_is_required": "Pickup location is required",

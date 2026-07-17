@@ -23,7 +23,9 @@ class PredictionModel {
     limit = json['limit'];
     offset = json['offset'];
     data = json['data'] != null ? Data.fromJson(json['data']) : null;
-    errors = json['errors'].cast<String>();
+    if (json['errors'] != null) {
+      errors = json['errors'].cast<String>();
+    }
   }
 
 }
@@ -74,7 +76,9 @@ class PlacePrediction {
     structuredFormat = json['structuredFormat'] != null
         ? StructuredFormat.fromJson(json['structuredFormat'])
         : null;
-    types = json['types'].cast<String>();
+    if (json['types'] != null) {
+      types = json['types'].cast<String>();
+    }
   }
 
 

@@ -439,6 +439,8 @@
   "enter_entrance": "أدخل المدخل",
   "pick_location": "اختر الموقع",
   "search_location": "موقع البحث",
+  "search_location_lebanon": "ابحث عن موقع (لبنان)",
+  "location_must_be_in_lebanon": "يُرجى اختيار موقع داخل لبنان.",
   "street": "شارع",
   "wallet_payment": "دفع المحفظة",
   "successfully_logout": "تم تسجيل الخروج بنجاح",

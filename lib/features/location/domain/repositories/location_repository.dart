@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:ride_sharing_user_app/data/api_client.dart';
 import 'package:ride_sharing_user_app/features/location/domain/repositories/location_repository_interface.dart';
+import 'package:ride_sharing_user_app/features/location/domain/way2go_address_catalog.dart';
 import 'package:ride_sharing_user_app/util/app_constants.dart';
 import 'package:ride_sharing_user_app/features/address/domain/models/address_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,7 +27,25 @@ class LocationRepository implements LocationRepositoryInterface{
 
   @override
   Future<Response> searchLocation(String text) async {
-    return await apiClient.getData('${AppConstants.searchLocationUri}?search_text=${text.replaceAll('#', '')}');
+    final catalog = await Way2GoAddressCatalog.loadCatalog(apiClient);
+    final suggestions = Way2GoAddressCatalog.search(catalog, text);
+    return Response(
+      statusCode: 200,
+      body: <String, dynamic>{
+        'data': <String, dynamic>{
+          'suggestions': suggestions
+              .map((s) => <String, dynamic>{
+                    'placePrediction': <String, dynamic>{
+                      'placeId': s.placePrediction?.placeId,
+                      'text': <String, dynamic>{
+                        'text': s.placePrediction?.text?.text,
+                      },
+                    },
+                  })
+              .toList(),
+        },
+      },
+    );
   }
 
   @override

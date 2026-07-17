@@ -181,7 +181,7 @@ class ConfigModel {
     businessSupportEmail = json['business_support_email'];
     baseUrl = json['base_url'];
     webSocketUrl = json['websocket_url'];
-    webSocketPort = json['websocket_port'];
+    webSocketPort = json['websocket_port']?.toString();
     webSocketKey = json['websocket_key'];
     imageBaseUrl = json['image_base_url'] != null
         ? ImageBaseUrl.fromJson(json['image_base_url'])
