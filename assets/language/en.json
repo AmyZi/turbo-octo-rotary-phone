@@ -186,7 +186,7 @@
   "category": "Category",
   "parcel_dimension": "Parcel Dimension",
   "parcel_weight": "Parcel Weight",
-  "parcel_weight_hint": "0.5",
+  "parcel_weight_hint": "1",
   "terms_and_policy": "Terms & Policy",
   "insight": "Insight",
   "save_details": "Save Details",
