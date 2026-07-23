@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const BannerView(),
 
                           const Padding(
-                            padding: EdgeInsets.only(top:Dimensions.paddingSize),
+                            padding: const EdgeInsets.only(top:Dimensions.paddingSize),
                             child: CategoryView(),
                           ),
 
