@@ -32,8 +32,7 @@ class ParcelInfoWidget extends StatefulWidget {
 class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
   // ── Inline search state (shared pattern for sender & receiver) ────────────
   final TextEditingController _senderSearchController = TextEditingController();
-  final TextEditingController _receiverSearchController =
-      TextEditingController();
+  final TextEditingController _receiverSearchController = TextEditingController();
   final FocusNode _senderSearchFocus = FocusNode();
   final FocusNode _receiverSearchFocus = FocusNode();
 
@@ -47,6 +46,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
   bool _searchingReceiver = false;
 
   // FEATURE: track whether address was confirmed via dropdown (required for map sync)
+  // These are local flags — validation also checks LocationController as fallback
   bool _senderAddressConfirmed = false;
   bool _receiverAddressConfirmed = false;
   // ─────────────────────────────────────────────────────────────────────────
@@ -61,12 +61,10 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
       final phone = Get.find<ProfileController>().profileModel?.data?.phone;
       if (phone != null) {
         parcelController.onChangeSenderCountryCode(
-            CountryCodeHelper.getCountryCode(phone),
-            isUpdate: false);
+            CountryCodeHelper.getCountryCode(phone), isUpdate: false);
       }
       parcelController.senderContactController.text =
-          phone?.replaceAll(parcelController.getSenderCountryCode ?? '', '') ??
-              '';
+          phone?.replaceAll(parcelController.getSenderCountryCode ?? '', '') ?? '';
       parcelController.senderNameController.text =
           Get.find<ProfileController>().customerName();
 
@@ -76,17 +74,13 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         final currentAddress = loc.fromAddress;
         final addr = currentAddress?.address ?? loc.address;
 
-        if (addr.isNotEmpty &&
-            parcelController.senderAddressController.text.isEmpty) {
-          // FIX: Wrap state updates in setState so the visual text engine picks up the prefill value
+        if (addr.isNotEmpty && parcelController.senderAddressController.text.isEmpty) {
           setState(() {
             _senderSearchController.text = addr;
             parcelController.senderAddressController.text = addr;
-
             if (currentAddress != null) {
               loc.setSenderAddress(currentAddress);
-              _senderAddressConfirmed =
-                  true; // current location counts as confirmed
+              _senderAddressConfirmed = true;
             }
           });
           parcelController.update();
@@ -95,8 +89,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         // Restore existing confirmed state if user navigated back
         if (parcelController.senderAddressController.text.isNotEmpty) {
           setState(() {
-            _senderSearchController.text =
-                parcelController.senderAddressController.text;
+            _senderSearchController.text = parcelController.senderAddressController.text;
             if (loc.parcelSenderAddress != null) {
               _senderAddressConfirmed = true;
             }
@@ -109,8 +102,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         final loc = Get.find<LocationController>();
         if (parcelController.receiverAddressController.text.isNotEmpty) {
           setState(() {
-            _receiverSearchController.text =
-                parcelController.receiverAddressController.text;
+            _receiverSearchController.text = parcelController.receiverAddressController.text;
             if (loc.parcelReceiverAddress != null) {
               _receiverAddressConfirmed = true;
             }
@@ -137,10 +129,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     _senderAddressConfirmed = false;
 
     if (text.isEmpty) {
-      setState(() {
-        _senderSuggestions = [];
-        _showSenderDropdown = false;
-      });
+      setState(() { _senderSuggestions = []; _showSenderDropdown = false; });
       return;
     }
     setState(() => _searchingSender = true);
@@ -161,10 +150,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     _receiverAddressConfirmed = false;
 
     if (text.isEmpty) {
-      setState(() {
-        _receiverSuggestions = [];
-        _showReceiverDropdown = false;
-      });
+      setState(() { _receiverSuggestions = []; _showReceiverDropdown = false; });
       return;
     }
     setState(() => _searchingReceiver = true);
@@ -185,10 +171,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     final placeId = suggestion.placePrediction?.placeId ?? '';
     final description = suggestion.placePrediction?.text?.text ?? '';
 
-    setState(() {
-      _showSenderDropdown = false;
-      _searchingSender = true;
-    });
+    setState(() { _showSenderDropdown = false; _searchingSender = true; });
     _senderSearchFocus.unfocus();
 
     final address = await loc.setLocation(placeId, description, null,
@@ -210,10 +193,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     final placeId = suggestion.placePrediction?.placeId ?? '';
     final description = suggestion.placePrediction?.text?.text ?? '';
 
-    setState(() {
-      _showReceiverDropdown = false;
-      _searchingReceiver = true;
-    });
+    setState(() { _showReceiverDropdown = false; _searchingReceiver = true; });
     _receiverSearchFocus.unfocus();
 
     final address = await loc.setLocation(placeId, description, null,
@@ -227,6 +207,18 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
       parcelController.update();
     }
     if (mounted) setState(() => _searchingReceiver = false);
+  }
+
+  // ── Helper: check if sender address has valid coordinates ─────────────────
+  bool _isSenderAddressValid() {
+    return _senderAddressConfirmed ||
+        Get.find<LocationController>().parcelSenderAddress != null;
+  }
+
+  // ── Helper: check if receiver address has valid coordinates ───────────────
+  bool _isReceiverAddressValid() {
+    return _receiverAddressConfirmed ||
+        Get.find<LocationController>().parcelReceiverAddress != null;
   }
 
   Widget _buildInlineSearchField({
@@ -270,17 +262,14 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
                 ? Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 16, height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Theme.of(context).primaryColor,
                       ),
                     ),
                   )
-                : Image.asset(Images.location,
-                    width: 20,
-                    height: 20,
+                : Image.asset(Images.location, width: 20, height: 20,
                     color: Theme.of(context).primaryColor),
           ),
         ),
@@ -318,8 +307,8 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
                     vertical: Dimensions.paddingSizeSmall,
                   ),
                   child: Row(children: [
-                    Icon(Icons.location_on_outlined,
-                        size: 18, color: Theme.of(context).primaryColor),
+                    Icon(Icons.location_on_outlined, size: 18,
+                        color: Theme.of(context).primaryColor),
                     const SizedBox(width: Dimensions.paddingSizeSmall),
                     Expanded(
                       child: Text(
@@ -348,6 +337,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+
           // ── Contact ────────────────────────────────────────────────────────
           TextFieldTitle(title: 'contact'.tr, textOpacity: 0.8),
           CustomTextField(
@@ -374,10 +364,8 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
                 : parcelController.getReceiverCountryDialCode,
             onCountryChanged: (CountryCode countryCode) {
               widget.isSender
-                  ? parcelController
-                      .onChangeSenderCountryCode(countryCode.dialCode)
-                  : parcelController
-                      .onChangeReceiverCountryCode(countryCode.dialCode);
+                  ? parcelController.onChangeSenderCountryCode(countryCode.dialCode)
+                  : parcelController.onChangeReceiverCountryCode(countryCode.dialCode);
             },
           ),
 
@@ -403,8 +391,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
                 ? parcelController.senderAddressNode
                 : parcelController.receiverAddressNode,
             inputType: TextInputType.text,
-            onTap: () =>
-                parcelController.focusOnBottomSheet(widget.expandableKey),
+            onTap: () => parcelController.focusOnBottomSheet(widget.expandableKey),
           ),
 
           // ── Address (inline search for both sender & receiver) ─────────────
@@ -441,8 +428,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
               return const SizedBox(height: Dimensions.paddingSizeSmall);
             }
             return Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: Dimensions.paddingSizeSmall),
+              padding: const EdgeInsets.symmetric(vertical: Dimensions.paddingSizeSmall),
               child: SizedBox(
                 height: Get.width * 0.075,
                 child: ListView.builder(
@@ -454,69 +440,53 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
                     return InkWell(
                       onTap: () {
                         final loc = Get.find<LocationController>();
-                        loc
-                            .getZone(saved.latitude.toString(),
-                                saved.longitude.toString())
-                            .then((value) {
+                        loc.getZone(saved.latitude.toString(),
+                            saved.longitude.toString()).then((value) {
                           if (value.isSuccess) {
                             if (widget.isSender) {
                               loc.setSenderAddress(saved);
-                              _senderSearchController.text =
-                                  saved.address ?? '';
-                              parcelController.senderAddressController.text =
-                                  saved.address ?? '';
+                              _senderSearchController.text = saved.address ?? '';
+                              parcelController.senderAddressController.text = saved.address ?? '';
                               setState(() => _senderAddressConfirmed = true);
                             } else {
                               loc.setReceiverAddress(saved);
-                              _receiverSearchController.text =
-                                  saved.address ?? '';
-                              parcelController.receiverAddressController.text =
-                                  saved.address ?? '';
+                              _receiverSearchController.text = saved.address ?? '';
+                              parcelController.receiverAddressController.text = saved.address ?? '';
                               setState(() => _receiverAddressConfirmed = true);
                             }
                           } else {
-                            showCustomSnackBar(
-                                'service_not_available_in_this_area'.tr);
+                            showCustomSnackBar('service_not_available_in_this_area'.tr);
                           }
                         });
                       },
                       child: Container(
-                        margin: const EdgeInsets.only(
-                            right: Dimensions.paddingSizeSmall),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: Dimensions.paddingSize),
+                        margin: const EdgeInsets.only(right: Dimensions.paddingSizeSmall),
+                        padding: const EdgeInsets.symmetric(horizontal: Dimensions.paddingSize),
                         decoration: BoxDecoration(
                           color: Theme.of(context).cardColor,
                           border: Border.all(
                             color: Get.isDarkMode
                                 ? Theme.of(context).hintColor
-                                : Theme.of(context)
-                                    .primaryColor
-                                    .withValues(alpha: 0.4),
+                                : Theme.of(context).primaryColor.withValues(alpha: 0.4),
                             width: 0.5,
                           ),
-                          borderRadius: BorderRadius.circular(
-                              Dimensions.paddingSizeSmall),
+                          borderRadius: BorderRadius.circular(Dimensions.paddingSizeSmall),
                         ),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Image.asset(
-                                saved.addressLabel == 'home'
-                                    ? Images.homeIcon
-                                    : saved.addressLabel == 'office'
-                                        ? Images.workIcon
-                                        : Images.otherIcon,
-                                color: Get.find<ThemeController>().darkTheme
-                                    ? Theme.of(context).primaryColor
-                                    : Theme.of(context).hintColor,
-                                height: 16,
-                                width: 16,
-                              ),
-                              const SizedBox(
-                                  width: Dimensions.paddingSizeSmall),
-                              Text(saved.addressLabel!.tr, style: textBold),
-                            ]),
+                        child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                          Image.asset(
+                            saved.addressLabel == 'home'
+                                ? Images.homeIcon
+                                : saved.addressLabel == 'office'
+                                    ? Images.workIcon
+                                    : Images.otherIcon,
+                            color: Get.find<ThemeController>().darkTheme
+                                ? Theme.of(context).primaryColor
+                                : Theme.of(context).hintColor,
+                            height: 16, width: 16,
+                          ),
+                          const SizedBox(width: Dimensions.paddingSizeSmall),
+                          Text(saved.addressLabel!.tr, style: textBold),
+                        ]),
                       ),
                     );
                   },
@@ -537,24 +507,19 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
                 if (parcelController.senderContactController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_contact_number'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.senderContactNode);
-                } else if (!senderNumber.isValid(
-                    type: PhoneNumberType.mobile)) {
+                  FocusScope.of(context).requestFocus(parcelController.senderContactNode);
+                } else if (!senderNumber.isValid(type: PhoneNumberType.mobile)) {
                   showCustomSnackBar('enter_valid_contact_number'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.senderContactNode);
+                  FocusScope.of(context).requestFocus(parcelController.senderContactNode);
                 } else if (parcelController.senderNameController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_name'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.senderNameNode);
+                  FocusScope.of(context).requestFocus(parcelController.senderNameNode);
                   parcelController.focusOnBottomSheet(widget.expandableKey);
-                } else if (parcelController
-                    .senderAddressController.text.isEmpty) {
+                } else if (parcelController.senderAddressController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_address'.tr);
-                } else if (!_senderAddressConfirmed) {
-                  showCustomSnackBar(
-                      'please_select_a_valid_address_from_the_suggestions'.tr);
+                // FIX: check local flag OR controller coordinates as fallback
+                } else if (!_isSenderAddressValid()) {
+                  showCustomSnackBar('please_select_a_valid_address_from_the_suggestions'.tr);
                 } else {
                   parcelController.updateTabControllerIndex(1);
                   if (parcelController.getReceiverCountryDialCode == null) {
@@ -568,37 +533,29 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
                 if (parcelController.receiverContactController.text.isEmpty) {
                   showCustomSnackBar('enter_receiver_contact_number'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.receiverContactNode);
-                } else if (!receiverNumber.isValid(
-                    type: PhoneNumberType.mobile)) {
+                  FocusScope.of(context).requestFocus(parcelController.receiverContactNode);
+                } else if (!receiverNumber.isValid(type: PhoneNumberType.mobile)) {
                   showCustomSnackBar('enter_valid_contact_number'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.receiverContactNode);
-                } else if (parcelController
-                    .receiverNameController.text.isEmpty) {
+                  FocusScope.of(context).requestFocus(parcelController.receiverContactNode);
+                } else if (parcelController.receiverNameController.text.isEmpty) {
                   showCustomSnackBar('enter_receiver_name'.tr);
-                  FocusScope.of(context)
-                      .requestFocus(parcelController.receiverNameNode);
+                  FocusScope.of(context).requestFocus(parcelController.receiverNameNode);
                   parcelController.focusOnBottomSheet(widget.expandableKey);
-                } else if (parcelController
-                    .receiverAddressController.text.isEmpty) {
+                } else if (parcelController.receiverAddressController.text.isEmpty) {
                   showCustomSnackBar('enter_receiver_address'.tr);
-                } else if (!_receiverAddressConfirmed) {
-                  showCustomSnackBar(
-                      'please_select_a_valid_address_from_the_suggestions'.tr);
-                } else if (parcelController
-                    .senderContactController.text.isEmpty) {
+                // FIX: check local flag OR controller coordinates as fallback
+                } else if (!_isReceiverAddressValid()) {
+                  showCustomSnackBar('please_select_a_valid_address_from_the_suggestions'.tr);
+                } else if (parcelController.senderContactController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_contact_number'.tr);
                 } else if (parcelController.senderNameController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_name'.tr);
-                } else if (parcelController
-                    .senderAddressController.text.isEmpty) {
+                } else if (parcelController.senderAddressController.text.isEmpty) {
                   showCustomSnackBar('enter_sender_address'.tr);
                   parcelController.updateTabControllerIndex(0);
-                } else if (!_senderAddressConfirmed) {
-                  showCustomSnackBar(
-                      'please_select_a_valid_address_from_the_suggestions'.tr);
+                // FIX: check local flag OR controller coordinates as fallback
+                } else if (!_isSenderAddressValid()) {
+                  showCustomSnackBar('please_select_a_valid_address_from_the_suggestions'.tr);
                   parcelController.updateTabControllerIndex(0);
                 } else {
                   Get.find<MapController>().notifyMapController();
