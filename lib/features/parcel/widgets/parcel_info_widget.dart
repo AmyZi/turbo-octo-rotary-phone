@@ -183,16 +183,8 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     final loc = Get.find<LocationController>();
     final parcelController = Get.find<ParcelController>();
 
-    // Extract placeId with fallback to root or prediction object
-    final placeId = suggestion.placePrediction?.placeId ?? 
-                    suggestion.placeId ?? 
-                    '';
-    
-    // Extract text description with fallback hierarchy
-    final description = suggestion.placePrediction?.text?.text ?? 
-                        suggestion.description ?? 
-                        suggestion.text ?? 
-                        '';
+    final placeId = suggestion.placePrediction?.placeId ?? '';
+    final description = suggestion.placePrediction?.text?.text ?? '';
 
     if (placeId.isEmpty) return;
 
@@ -202,7 +194,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     });
     _senderSearchFocus.unfocus();
 
-    // Fetch full location details including Lat/Lng using placeId
+    // Fetch complete details + coordinates from placeId
     final address = await loc.setLocation(
       placeId, 
       description, 
@@ -213,18 +205,19 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
     if (address != null) {
       loc.setSenderAddress(address);
-      parcelController.senderAddressController.text = address.address ?? description;
-      _senderSearchController.text = address.address ?? description;
+      final selectedText = address.address ?? description;
       
+      parcelController.senderAddressController.text = selectedText;
+      _senderSearchController.text = selectedText;
+
       setState(() {
         _senderAddressConfirmed = true;
       });
-      
-      // Sync coordinates with Map Controller
+
       Get.find<MapController>().notifyMapController();
       parcelController.update();
     }
-    
+
     if (mounted) setState(() => _searchingSender = false);
   }
 
@@ -232,16 +225,8 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     final loc = Get.find<LocationController>();
     final parcelController = Get.find<ParcelController>();
 
-    // Extract placeId with fallback to root or prediction object
-    final placeId = suggestion.placePrediction?.placeId ?? 
-                    suggestion.placeId ?? 
-                    '';
-                    
-    // Extract text description with fallback hierarchy
-    final description = suggestion.placePrediction?.text?.text ?? 
-                        suggestion.description ?? 
-                        suggestion.text ?? 
-                        '';
+    final placeId = suggestion.placePrediction?.placeId ?? '';
+    final description = suggestion.placePrediction?.text?.text ?? '';
 
     if (placeId.isEmpty) return;
 
@@ -251,7 +236,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     });
     _receiverSearchFocus.unfocus();
 
-    // Fetch full location details including Lat/Lng using placeId
+    // Fetch complete details + coordinates from placeId
     final address = await loc.setLocation(
       placeId, 
       description, 
@@ -262,18 +247,19 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
     if (address != null) {
       loc.setReceiverAddress(address);
-      parcelController.receiverAddressController.text = address.address ?? description;
-      _receiverSearchController.text = address.address ?? description;
+      final selectedText = address.address ?? description;
       
+      parcelController.receiverAddressController.text = selectedText;
+      _receiverSearchController.text = selectedText;
+
       setState(() {
         _receiverAddressConfirmed = true;
       });
-      
-      // Sync coordinates with Map Controller
+
       Get.find<MapController>().notifyMapController();
       parcelController.update();
     }
-    
+
     if (mounted) setState(() => _searchingReceiver = false);
   }
 
