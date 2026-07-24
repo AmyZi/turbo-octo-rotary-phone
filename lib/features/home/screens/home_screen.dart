@@ -166,9 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         child: Column(children: [
                           const BannerView(),
-                          Padding(
+                          const Padding(
                             padding:
-                                constEdgeInsets.only(top: Dimensions.paddingSize),
+                                EdgeInsets.only(top: Dimensions.paddingSize),
                             child: CategoryView(),
                           ),
                           if ((config?.externalSystem ?? false) &&
