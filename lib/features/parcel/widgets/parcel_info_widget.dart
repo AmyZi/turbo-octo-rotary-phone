@@ -199,6 +199,9 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     final address = await loc.setLocation(placeId, description, null,
         type: LocationType.receiverLocation, fromSearch: true);
 
+    print('DEBUG receiver address: $address');
+    print('DEBUG parcelReceiverAddress: ${loc.parcelReceiverAddress}');
+
     if (address != null) {
       loc.setReceiverAddress(address);
       parcelController.receiverAddressController.text = description;
@@ -209,7 +212,6 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
     if (mounted) setState(() => _searchingReceiver = false);
   }
 
-  // ── Helper: check if sender address has valid coordinates ─────────────────
   bool _isSenderAddressValid() {
     return _senderAddressConfirmed ||
         Get.find<LocationController>().parcelSenderAddress != null;
