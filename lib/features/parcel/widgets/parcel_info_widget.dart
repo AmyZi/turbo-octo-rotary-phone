@@ -188,27 +188,29 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
     if (placeId.isEmpty) return;
 
+    // 1. Unfocus first to avoid focus checks in onChanged
+    _senderSearchFocus.unfocus();
+
     setState(() {
       _showSenderDropdown = false;
       _searchingSender = true;
     });
-    _senderSearchFocus.unfocus();
 
-    // Fetch complete details + coordinates from placeId
     final address = await loc.setLocation(
-      placeId, 
-      description, 
+      placeId,
+      description,
       null,
-      type: LocationType.senderLocation, 
+      type: LocationType.senderLocation,
       fromSearch: true,
     );
 
     if (address != null) {
       loc.setSenderAddress(address);
       final selectedText = address.address ?? description;
-      
-      parcelController.senderAddressController.text = selectedText;
+
+      // 2. Set search text & confirm state safely
       _senderSearchController.text = selectedText;
+      parcelController.senderAddressController.text = selectedText;
 
       setState(() {
         _senderAddressConfirmed = true;
@@ -230,27 +232,29 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
 
     if (placeId.isEmpty) return;
 
+    // 1. Unfocus first to avoid focus checks in onChanged
+    _receiverSearchFocus.unfocus();
+
     setState(() {
       _showReceiverDropdown = false;
       _searchingReceiver = true;
     });
-    _receiverSearchFocus.unfocus();
 
-    // Fetch complete details + coordinates from placeId
     final address = await loc.setLocation(
-      placeId, 
-      description, 
+      placeId,
+      description,
       null,
-      type: LocationType.receiverLocation, 
+      type: LocationType.receiverLocation,
       fromSearch: true,
     );
 
     if (address != null) {
       loc.setReceiverAddress(address);
       final selectedText = address.address ?? description;
-      
-      parcelController.receiverAddressController.text = selectedText;
+
+      // 2. Set search text & confirm state safely
       _receiverSearchController.text = selectedText;
+      parcelController.receiverAddressController.text = selectedText;
 
       setState(() {
         _receiverAddressConfirmed = true;
