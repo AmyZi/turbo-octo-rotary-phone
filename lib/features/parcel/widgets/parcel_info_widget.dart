@@ -62,10 +62,10 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
       parcelController.senderNameController.text =
           Get.find<ProfileController>().customerName();
 
-      // FEATURE: auto-fetch current location and pre-fill sender address with coordinates
+      //fetch current location and pre-fill sender address with coordinates
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final loc = Get.find<LocationController>();
-        final currentAddress = loc.fromAddress;
+        final currentAddress = loc.fromAddress ?? loc.getUserAddress();
         final addr = currentAddress?.address ?? loc.address;
 
         if (addr.isNotEmpty && parcelController.senderAddressController.text.isEmpty) {
@@ -74,38 +74,27 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
             parcelController.senderAddressController.text = addr;
           });
 
-          // Set address model with coordinates via zone check
           if (currentAddress != null && currentAddress.latitude != null) {
-            loc.getZone(
-              currentAddress.latitude.toString(),
-              currentAddress.longitude.toString(),
-            ).then((zone) {
-              if (zone.isSuccess) {
-                loc.setSenderAddress(currentAddress);
-              }
-            });
+            loc.setSenderAddress(currentAddress);
           }
           parcelController.update();
         }
 
-        // Restore search field if user navigated back
         if (parcelController.senderAddressController.text.isNotEmpty) {
           setState(() {
             _senderSearchController.text = parcelController.senderAddressController.text;
           });
         }
       });
-    } else {
-      // Restore receiver field if already set
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (parcelController.receiverAddressController.text.isNotEmpty) {
-          setState(() {
-            _receiverSearchController.text = parcelController.receiverAddressController.text;
-          });
-        }
-      });
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (parcelController.receiverAddressController.text.isNotEmpty) {
+            setState(() {
+              _receiverSearchController.text = parcelController.receiverAddressController.text;
+            });
+          }
+        });
     }
-  }
 
   @override
   void dispose() {
