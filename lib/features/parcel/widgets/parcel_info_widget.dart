@@ -468,6 +468,11 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
           ButtonWidget(
             buttonText: 'next'.tr,
             onPressed: () {
+              print('DEBUG sender lat: ${Get.find<LocationController>().parcelSenderAddress?.latitude}');
+              print('DEBUG sender lng: ${Get.find<LocationController>().parcelSenderAddress?.longitude});
+              print('DEBUG sender addr: ${Get.find<LocationController>().parcelSenderAddress?.address}');
+              print('DEBUG receiver lat: ${Get.find<LocationController>().parcelReceiverAddress?.latitude}');
+              print('DEBUG receiver lng: ${Get.find<LocationController>().parcelReceiverAddress?.longitude}');
               final isSenderTab = parcelController.tabController.index == 0;
 
               if (isSenderTab) {
