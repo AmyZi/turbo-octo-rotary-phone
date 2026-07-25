@@ -94,6 +94,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
             });
           }
         });
+      }
     }
 
   @override
