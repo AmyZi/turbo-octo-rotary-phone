@@ -69,21 +69,22 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         final addr = currentAddress?.address ?? loc.address;
 
         if (addr.isNotEmpty && parcelController.senderAddressController.text.isEmpty) {
+          // Get zone first to ensure valid address object
+          if (currentAddress != null) {
+            loc.getZone(
+              currentAddress.latitude.toString(),
+              currentAddress.longitude.toString(),
+            ).then((zone) {
+              if (zone.isSuccess) {
+                loc.setSenderAddress(currentAddress);
+              }
+            });
+          }
           setState(() {
             _senderSearchController.text = addr;
             parcelController.senderAddressController.text = addr;
-            if (currentAddress != null) {
-              loc.setSenderAddress(currentAddress);
-            }
           });
           parcelController.update();
-        }
-
-        // Restore search field if user navigated back
-        if (parcelController.senderAddressController.text.isNotEmpty) {
-          setState(() {
-            _senderSearchController.text = parcelController.senderAddressController.text;
-          });
         }
       });
     } else {
