@@ -163,8 +163,9 @@ class RideController extends GetxController implements GetxService {
     parcelEstimatedFare = null;
     LocationController locController = Get.find<LocationController>();
     ParcelController parcelController = Get.find<ParcelController>();
-    Address fromPosition = parcel ? locController.parcelSenderAddress : locController.fromAddress;
-    Address toPosition = parcel ? locController.parcelReceiverAddress : locController.toAddress;
+    Address? fromPosition = parcel ? locController.parcelSenderAddress : locController.fromAddress;
+    Address? toPosition = parcel ? locController.parcelReceiverAddress : locController.toAddress;
+
 
     if (fromPosition == null || toPosition == null) {
       loading = false;
