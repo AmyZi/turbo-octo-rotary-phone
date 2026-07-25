@@ -163,8 +163,8 @@ class RideController extends GetxController implements GetxService {
     parcelEstimatedFare = null;
     LocationController locController = Get.find<LocationController>();
     ParcelController parcelController = Get.find<ParcelController>();
-    Address? fromPosition = parcel ? locController.parcelSenderAddress : locController.fromAddress;
-    Address? toPosition = parcel ? locController.parcelReceiverAddress : locController.toAddress;
+    Address fromPosition = parcel ? locController.parcelSenderAddress : locController.fromAddress;
+    Address toPosition = parcel ? locController.parcelReceiverAddress : locController.toAddress;
 
     if (fromPosition == null || toPosition == null) {
       loading = false;
@@ -244,8 +244,8 @@ class RideController extends GetxController implements GetxService {
     update();
 
     LocationController locController = Get.find<LocationController>();
-    Address? pickUpPosition = parcel ? locController.parcelSenderAddress : tripDetails == null ? locController.fromAddress : Address();
-    Address? destinationPosition = parcel ? locController.parcelReceiverAddress : tripDetails == null ? locController.toAddress : Address();
+    Address pickUpPosition = parcel ? locController.parcelSenderAddress : tripDetails == null ? locController.fromAddress : Address();
+    Address destinationPosition = parcel ? locController.parcelReceiverAddress : tripDetails == null ? locController.toAddress : Address();
 
     if (parcel && (pickUpPosition == null || destinationPosition == null)) {
       isSubmit = false;
