@@ -245,8 +245,8 @@ class RideController extends GetxController implements GetxService {
     update();
 
     LocationController locController = Get.find<LocationController>();
-    Address pickUpPosition = parcel ? locController.parcelSenderAddress : tripDetails == null ? locController.fromAddress : Address();
-    Address destinationPosition = parcel ? locController.parcelReceiverAddress : tripDetails == null ? locController.toAddress : Address();
+    Address? pickUpPosition = parcel ? locController.parcelSenderAddress : tripDetails == null ? locController.fromAddress : Address();
+    Address? destinationPosition = parcel ? locController.parcelReceiverAddress : tripDetails == null ? locController.toAddress : Address();
 
     if (parcel && (pickUpPosition == null || destinationPosition == null)) {
       isSubmit = false;
