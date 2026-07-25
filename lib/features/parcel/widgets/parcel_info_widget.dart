@@ -74,7 +74,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
             parcelController.senderAddressController.text = addr;
           });
 
-          // FEATURE: also set address model with coordinates
+          // Set address model with coordinates via zone check
           if (currentAddress != null && currentAddress.latitude != null) {
             loc.getZone(
               currentAddress.latitude.toString(),
@@ -88,6 +88,7 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
           parcelController.update();
         }
 
+        // Restore search field if user navigated back
         if (parcelController.senderAddressController.text.isNotEmpty) {
           setState(() {
             _senderSearchController.text = parcelController.senderAddressController.text;
@@ -475,6 +476,9 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
           ButtonWidget(
             buttonText: 'next'.tr,
             onPressed: () {
+              // FIX: declare isSenderTab inside onPressed where parcelController is in scope
+              final isSenderTab = parcelController.tabController.index == 0;
+
               if (isSenderTab) {
                 final senderNumber = PhoneNumber.parse(
                     '${parcelController.getSenderCountryCode}${parcelController.senderContactController.text}');
