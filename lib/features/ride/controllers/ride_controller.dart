@@ -260,8 +260,8 @@ class RideController extends GetxController implements GetxService {
     DateTime scheduledTime = DateTime(scheduleDate.year,scheduleDate.month,scheduleDate.day,scheduleTime.hour,scheduleTime.minute,scheduleTime.second);
 
     await locController.ensureZoneId(
-      lat: pickUpPosition.latitude,
-      lng: pickUpPosition.longitude,
+      lat: pickUpPosition!.latitude,
+      lng: pickUpPosition!.longitude,
     );
     final customerCoords = locController.coordinatesForRideRequest(parcel: parcel);
     final rideZoneId = parcel
@@ -269,10 +269,10 @@ class RideController extends GetxController implements GetxService {
         : (selectedType?.zoneId ?? locController.fromAddress?.zoneId ?? locController.effectiveZoneId ?? '');
 
     Response response = await rideServiceInterface.submitRideRequest(
-      pickupLat: pickUpPosition.latitude.toString(),
-      pickupLng: pickUpPosition.longitude.toString(),
-      destinationLat: destinationPosition.latitude.toString(),
-      destinationLng: destinationPosition.longitude.toString(),
+      pickupLat: pickUpPosition!.latitude.toString(),
+      pickupLng: pickUpPosition!.longitude.toString(),
+      destinationLat: destinationPosition!.latitude.toString(),
+      destinationLng: destinationPosition!.longitude.toString(),
       customerCurrentLat: customerCoords.latitude.toString(),
       customerCurrentLng: customerCoords.longitude.toString(), type: parcel ? 'parcel' : 'ride_request',
         rideRequestType: parcel ? null : _rideType == RideType.regularRide ? 'regular' : 'scheduled',
