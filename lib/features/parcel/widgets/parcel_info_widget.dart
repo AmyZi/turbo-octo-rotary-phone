@@ -69,8 +69,13 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
         final addr = currentAddress?.address ?? loc.address;
 
         if (addr.isNotEmpty && parcelController.senderAddressController.text.isEmpty) {
-          // Get zone first to ensure valid address object
-          if (currentAddress != null) {
+          setState(() {
+            _senderSearchController.text = addr;
+            parcelController.senderAddressController.text = addr;
+          });
+
+          // FEATURE: also set address model with coordinates
+          if (currentAddress != null && currentAddress.latitude != null) {
             loc.getZone(
               currentAddress.latitude.toString(),
               currentAddress.longitude.toString(),
@@ -80,11 +85,13 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
               }
             });
           }
-          setState(() {
-            _senderSearchController.text = addr;
-            parcelController.senderAddressController.text = addr;
-          });
           parcelController.update();
+        }
+
+        if (parcelController.senderAddressController.text.isNotEmpty) {
+          setState(() {
+            _senderSearchController.text = parcelController.senderAddressController.text;
+          });
         }
       });
     } else {
@@ -468,13 +475,6 @@ class _ParcelInfoWidgetState extends State<ParcelInfoWidget> {
           ButtonWidget(
             buttonText: 'next'.tr,
             onPressed: () {
-              print('DEBUG sender lat: ${Get.find<LocationController>().parcelSenderAddress?.latitude}');
-              print('DEBUG sender lng: ${Get.find<LocationController>().parcelSenderAddress?.longitude}');
-              print('DEBUG sender addr: ${Get.find<LocationController>().parcelSenderAddress?.address}');
-              print('DEBUG receiver lat: ${Get.find<LocationController>().parcelReceiverAddress?.latitude}');
-              print('DEBUG receiver lng: ${Get.find<LocationController>().parcelReceiverAddress?.longitude}');
-              final isSenderTab = parcelController.tabController.index == 0;
-
               if (isSenderTab) {
                 final senderNumber = PhoneNumber.parse(
                     '${parcelController.getSenderCountryCode}${parcelController.senderContactController.text}');
